@@ -49,7 +49,7 @@ describe("gateway session TTL", () => {
     });
     servers.push(server);
     const port = await listen(server);
-    const payload = { channel: "webchat", sender: "u1", text: "hello" };
+    const payload = { channel: "webchat", sender: "u1", text: "echo hello" };
 
     const first = await httpJson(port, "POST", "/message", payload);
     expect(first.status).toBe(200);
@@ -68,7 +68,7 @@ describe("gateway session TTL", () => {
     });
     servers.push(server);
     const port = await listen(server);
-    const payload = { channel: "webchat", sender: "u1", text: "hello" };
+    const payload = { channel: "webchat", sender: "u1", text: "echo hello" };
 
     expect((await httpJson(port, "POST", "/message", payload)).status).toBe(200);
 

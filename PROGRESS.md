@@ -121,20 +121,24 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 **Left for later**
 
-- Skill catalog is counted for `skillsLoaded`; routing still falls through to echo (Story 6).
+- Skill catalog is counted for `skillsLoaded`; unknown names are Story 6 (done).
 
 ---
 
 ## Story 6 — Unknown skill errors should be helpful
 
-**Status:** not started
+**Status:** done
 
 **AC:** 400 with `errorCode: UNKNOWN_SKILL`; include provided skill name and `availableSkills`; backward-compatible response shape.
 
-**Current vs AC**
+**What changed**
 
-- `pickSkill` maps `pair*` → pairing, `report*` → report, **everything else → echo**. No 400, no `UNKNOWN_SKILL`.
-- Need a compatible error body (existing clients still parse it) plus the new fields.
+- Unknown skill → 400 `{ error: "unknown_skill", errorCode: "UNKNOWN_SKILL", skill, availableSkills }`. Name comes from `body.skill` or the first text token.
+- Success body still `{ sessionId, skill, result }`. `pair*` / `report*` / `echo*` unchanged; echo is no longer the catch-all (TTL/sanitize tests now send `echo …`).
+
+**Left for later**
+
+- `status` prefix is Story 7.
 
 ---
 
@@ -161,7 +165,7 @@ Candidates already visible: misleading `Intentional...` comments, duplicate `sta
 
 ## Last verification
 
-Story 5 (this pass):
-- `npm test` — 25 passed
+Story 6 (this pass):
+- `npm test` — 27 passed
 - `npm run typecheck` — pass
 - `npm run lint` — pass

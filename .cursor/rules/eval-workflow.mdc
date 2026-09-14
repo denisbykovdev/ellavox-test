@@ -25,7 +25,7 @@ Source of truth is **acceptance criteria in `STORIES.md`**, not `Intentional...`
 
 - Do not break exported APIs (`Skill`, `MessageContext`, `SkillResult`, `isPairingCodeValid`, HTTP success payload fields).
 - Additive changes only (new optional fields, new routes, new skills). Existing skills must keep working unmodified.
-- Unknown-skill errors: keep a backward-compatible response shape while meeting Story 6 AC.
+- Unknown-skill errors: HTTP 400 with `{ error, errorCode: "UNKNOWN_SKILL", skill, availableSkills }`. Keep success `{ sessionId, skill, result }`. Echo is invoked with an `echo` prefix (it is not the default). Known `pair*` / `report*` / `echo*` routing stays.
 
 ## Secrets and time
 

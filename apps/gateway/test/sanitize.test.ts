@@ -35,7 +35,7 @@ describe("gateway inbound sanitization", () => {
       body: JSON.stringify({
         channel: "webchat",
         sender: "u1",
-        text: "hello  \r\nworld\u2028"
+        text: "echo hello  \r\nworld\u2028"
       })
     });
     const json = (await res.json()) as { result: { text: string } };

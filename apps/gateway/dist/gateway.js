@@ -10,13 +10,25 @@ const version = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.u
 function getSessionKey(channel, sender) {
     return stableHash(`${channel}:${sender}`);
 }
-function pickSkill(text) {
+function resolveSkill(text, requestedName) {
+    if (requestedName) {
+        const found = skills.find((s) => s.name.toLowerCase() === requestedName.toLowerCase());
+        if (!found)
+            return { ok: false, provided: requestedName };
+        return { ok: true, skill: found };
+    }
     const t = text.trim().toLowerCase();
     if (t.startsWith("pair"))
-        return pairingSkill;
+        return { ok: true, skill: pairingSkill };
     if (t.startsWith("report"))
-        return reportSkill;
-    return echoSkill;
+        return { ok: true, skill: reportSkill };
+    if (t.startsWith("echo"))
+        return { ok: true, skill: echoSkill };
+    const provided = text.trim().split(/\s+/)[0] ?? "";
+    return { ok: false, provided };
+}
+function availableSkillNames() {
+    return skills.map((s) => s.name);
 }
 function readJson(req) {
     return new Promise((resolve, reject) => {
@@ -81,6 +93,18 @@ export function createGateway(deps = {}) {
             const sender = String(body.sender ?? "anonymous");
             const textRaw = String(body.text ?? "");
             const text = sanitizeInboundText(textRaw);
+            const requestedName = body.skill == null || String(body.skill).trim() === ""
+                ? undefined
+                : String(body.skill).trim();
+            const picked = resolveSkill(text, requestedName);
+            if (!picked.ok) {
+                return send(res, 400, {
+                    error: "unknown_skill",
+                    errorCode: "UNKNOWN_SKILL",
+                    skill: picked.provided,
+                    availableSkills: availableSkillNames()
+                });
+            }
             const now = nowFn();
             const resolved = resolveSession(channel, sender, now);
             if (!resolved.ok) {
@@ -88,7 +112,7 @@ export function createGateway(deps = {}) {
             }
             const session = resolved.session;
             session.messages.push({ from: sender, text, at: now });
-            const skill = pickSkill(text);
+            const skill = picked.skill;
             const ctx = {
                 channel: channel,
                 sender,

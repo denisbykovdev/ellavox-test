@@ -35,11 +35,27 @@ function getSessionKey(channel: string, sender: string): string {
   return stableHash(`${channel}:${sender}`);
 }
 
-function pickSkill(text: string): Skill {
+function resolveSkill(
+  text: string,
+  requestedName: string | undefined
+): { ok: true; skill: Skill } | { ok: false; provided: string } {
+  if (requestedName) {
+    const found = skills.find((s) => s.name.toLowerCase() === requestedName.toLowerCase());
+    if (!found) return { ok: false, provided: requestedName };
+    return { ok: true, skill: found };
+  }
+
   const t = text.trim().toLowerCase();
-  if (t.startsWith("pair")) return pairingSkill;
-  if (t.startsWith("report")) return reportSkill;
-  return echoSkill;
+  if (t.startsWith("pair")) return { ok: true, skill: pairingSkill };
+  if (t.startsWith("report")) return { ok: true, skill: reportSkill };
+  if (t.startsWith("echo")) return { ok: true, skill: echoSkill };
+
+  const provided = text.trim().split(/\s+/)[0] ?? "";
+  return { ok: false, provided };
+}
+
+function availableSkillNames(): string[] {
+  return skills.map((s) => s.name);
 }
 
 function readJson(req: http.IncomingMessage): Promise<any> {
@@ -119,6 +135,20 @@ export function createGateway(deps: GatewayDeps = {}): http.Server {
       const sender = String(body.sender ?? "anonymous");
       const textRaw = String(body.text ?? "");
       const text = sanitizeInboundText(textRaw);
+      const requestedName =
+        body.skill == null || String(body.skill).trim() === ""
+          ? undefined
+          : String(body.skill).trim();
+
+      const picked = resolveSkill(text, requestedName);
+      if (!picked.ok) {
+        return send(res, 400, {
+          error: "unknown_skill",
+          errorCode: "UNKNOWN_SKILL",
+          skill: picked.provided,
+          availableSkills: availableSkillNames()
+        });
+      }
 
       const now = nowFn();
       const resolved = resolveSession(channel, sender, now);
@@ -129,7 +159,7 @@ export function createGateway(deps: GatewayDeps = {}): http.Server {
       const session = resolved.session;
       session.messages.push({ from: sender, text, at: now });
 
-      const skill = pickSkill(text);
+      const skill = picked.skill;
 
       const ctx: MessageContext = {
         channel: channel as any,
