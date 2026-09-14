@@ -13,11 +13,11 @@ Verification for a story: `npm test`, `npm run lint`, `npm run typecheck`.
 | Area | Path | Role |
 |------|------|------|
 | Gateway | `apps/gateway/src/index.ts` | HTTP `/health`, `/message`; sessions; skill routing |
-| Shared | `packages/shared` | `normalizePhone`, `parseDurationToMs`, `sanitizeInboundText`, `stableHash`, `ellipsis` |
+| Shared | `packages/shared` | `normalizePhone`, `parseDurationToMs`, `isTtlExpired`, `sanitizeInboundText`, `stableHash`, `ellipsis` |
 | Skills | `packages/skills` | `pairing`, `report`, `echo` |
-| Tests | `packages/skills/test/*.test.ts`, `packages/shared/test/*.test.ts` | pairing expiry; report; `normalizePhone` |
+| Tests | `packages/*/test`, `apps/gateway/test` | pairing; phone; report; TTL; gateway 401 |
 
-No gateway tests. Vitest: `**/*.test.ts`.
+No gateway listen-on-import in tests (`createGateway` + `index.ts` bootstrap). Vitest: `**/*.test.ts`.
 
 Public HTTP success body today: `{ sessionId, skill, result }` where `result` is `{ text, tags? }`.
 
@@ -72,16 +72,20 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 ## Story 3 — Session TTL should actually expire sessions
 
-**Status:** not started
+**Status:** done
 
 **AC:** expire after `SESSION_TTL_SECONDS` (default 3600); expired sessions return 401; tests must not sleep in real time.
 
-**Current vs AC**
+**What changed**
 
-- Env is `SESSION_TTL` string (`"30m"`), not `SESSION_TTL_SECONDS`. Local `parseDuration` duplicates shared `parseDurationToMs`.
-- On expiry the gateway **creates a new session** and still returns 200 — never 401.
-- Comment claims the TTL comparison is reversed / sessions never expire. The `< ttlMs` check is a normal “still alive” test; the real AC gap is missing 401 + wrong env/default.
-- No session/TTL tests. `Date.now()` is used directly.
+- TTL is `SESSION_TTL_SECONDS` (default 3600). Removed gateway `SESSION_TTL` / `parseDuration`.
+- Shared `isTtlExpired(atMs, nowMs, ttlSeconds)`: expired when `nowMs - atMs >= ttlSeconds * 1000`.
+- Existing expired session → 401 `{ error: "session_expired" }` (not a silent new session). `/health` and `/message` 200 shape unchanged.
+- `createGateway({ now, ttlSeconds })` is testable; `index.ts` only listens. Tests jump a fake clock (no `sleep`).
+
+**Left for later**
+
+- Unused skill catalog lives in Story 6 (`availableSkills`).
 
 ---
 
@@ -142,13 +146,13 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 **Status:** not started (after stories 1–7)
 
-Candidates already visible: misleading `Intentional...` comments, duplicate `stableHash` / duration helpers, `any` on `readJson` and `channel as any`, `ellipsis` off-by-one (`max - 1`).
+Candidates already visible: misleading `Intentional...` comments, duplicate `stableHash`, `any` on `readJson` and `channel as any`, `ellipsis` off-by-one (`max - 1`).
 
 ---
 
 ## Last verification
 
-Story 2 (this pass):
-- `npm test` — 11 passed (pairing 6, phone 4, report 1)
+Story 3 (this pass):
+- `npm test` — 18 passed
 - `npm run typecheck` — pass
-- `npm run lint` — fail on pre-existing unused `skills` in `apps/gateway/src/index.ts` (not this story)
+- `npm run lint` — pass

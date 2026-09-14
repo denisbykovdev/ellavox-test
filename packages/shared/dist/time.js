@@ -28,4 +28,11 @@ export function parseDurationToMs(input) {
             return n;
     }
 }
+/**
+ * True when `atMs` is at least `ttlSeconds` old relative to `nowMs`.
+ * Compare in milliseconds only; no real clock.
+ */
+export function isTtlExpired(atMs, nowMs, ttlSeconds) {
+    return nowMs - atMs >= ttlSeconds * 1000;
+}
 //# sourceMappingURL=time.js.map
