@@ -15,9 +15,9 @@ Verification for a story: `npm test`, `npm run lint`, `npm run typecheck`.
 | Gateway | `apps/gateway/src/index.ts` | HTTP `/health`, `/message`; sessions; skill routing |
 | Shared | `packages/shared` | `normalizePhone`, `parseDurationToMs`, `sanitizeInboundText`, `stableHash`, `ellipsis` |
 | Skills | `packages/skills` | `pairing`, `report`, `echo` |
-| Tests | `packages/skills/test/*.test.ts` | pairing expiry; report 10-digit phone |
+| Tests | `packages/skills/test/*.test.ts`, `packages/shared/test/*.test.ts` | pairing expiry; report; `normalizePhone` |
 
-No gateway tests. No shared-package tests. Vitest: `**/*.test.ts`.
+No gateway tests. Vitest: `**/*.test.ts`.
 
 Public HTTP success body today: `{ sessionId, skill, result }` where `result` is `{ text, tags? }`.
 
@@ -54,16 +54,19 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 ## Story 2 — Normalize phone numbers consistently across skills
 
-**Status:** not started
+**Status:** done
 
 **AC:** US numbers → `+1XXXXXXXXXX`; multiple input formats; logic in shared library; edge-case tests.
 
-**Current vs AC**
+**What changed**
 
-- Shared `normalizePhone`: 11-digit numbers starting with `1` become `+1` + all 11 digits (`15551234567` → `+115551234567`).
-- Report skill uses a **local** `normalizePhoneNumber`, not shared. Local 11-digit path is `+${digits}` (different from shared).
-- Only one test: 10-digit `(555) 123-4567` via `reportSkill`. No 11-digit / already-E.164 / punctuation cases.
-- After the package resolve fix, that test **runs and fails**: local parser takes `\S+` so `(555)` is the “phone” and `123-4567 hello` is the body → `To: +555`. Shared `normalizePhone` is not used.
+- Single implementation: `normalizePhone` in `packages/shared`. Digits only; 10 → `+1…`; 11 with leading `1` → `+…` (no double `+1`); already `+1555…` and punctuation/junk all land on `+1XXXXXXXXXX`.
+- Removed local `normalizePhoneNumber` from `report.ts`; skill imports `normalizePhone`. Report command regex captures a formatted US phone (not `\S+`), so `(555) 123-4567` is the number, not `(555)`.
+- Tests: `packages/shared/test/phone.test.ts` (10 digits, 11 with leading 1, already `+`, junk). Existing report skill test covers formatted 10-digit through the skill.
+
+**Left for later**
+
+- Report body still untrimmed (not this story).
 
 ---
 
@@ -139,14 +142,13 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 **Status:** not started (after stories 1–7)
 
-Candidates already visible: misleading `Intentional...` comments, duplicate `stableHash` / duration / phone helpers, `any` on `readJson` and `channel as any`, `ellipsis` off-by-one (`max - 1`).
+Candidates already visible: misleading `Intentional...` comments, duplicate `stableHash` / duration helpers, `any` on `readJson` and `channel as any`, `ellipsis` off-by-one (`max - 1`).
 
 ---
 
 ## Last verification
 
-Story 1 (this pass):
-- pairing tests: 6 passed (fixed `createdAt`, boundaries, ±15s)
-- `npm test` — pairing green; report still fails (Story 2, untouched)
+Story 2 (this pass):
+- `npm test` — 11 passed (pairing 6, phone 4, report 1)
 - `npm run typecheck` — pass
 - `npm run lint` — fail on pre-existing unused `skills` in `apps/gateway/src/index.ts` (not this story)

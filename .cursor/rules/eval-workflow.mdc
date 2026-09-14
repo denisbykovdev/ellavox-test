@@ -18,6 +18,7 @@ Source of truth is **acceptance criteria in `STORIES.md`**, not `Intentional...`
 
 - Phone, time/TTL, sanitization, and other cross-skill helpers live in `packages/shared`.
 - Skills and the gateway consume shared helpers; do not keep a second competing implementation.
+- US phones: only `normalizePhone` in `packages/shared`. Strip non-digits, then 10 digits → `+1XXXXXXXXXX`, 11 digits starting with `1` → `+1XXXXXXXXXX` (never `+1` + 11 digits).
 
 ## Public contracts
 
@@ -31,3 +32,27 @@ Source of truth is **acceptance criteria in `STORIES.md`**, not `Intentional...`
 - Tests must be time-deterministic: inject `nowMs` / a fake clock. No real `sleep` / `setTimeout` waits for TTL or expiry.
 - Compare durations in **milliseconds only** (never mix with seconds). Pairing: 10 min TTL, ±15s skew, **inclusive** on both ends (`ageMs >= -15s && ageMs <= 10min + 15s`).
 - If an existing test contradicts `STORIES.md`, rewrite the test to the AC. Do not implement the old expectation.
+
+## Commit messages
+
+After a story, print a **copy-pasteable** message: type line, then a bullet for **every completed step** (not a one-line summary). The user pastes it as-is; do not ask them to send it back.
+
+```
+bug-fix: <short headline>;
+
+- step one;
+- step two;
+- step three;
+```
+
+Example (Story 2):
+
+```
+bug-fix: normalize US phones in shared and drop the report duplicate;
+
+- move US normalization to packages/shared normalizePhone (+1XXXXXXXXXX);
+- fix double +1 on 11-digit numbers;
+- accept multiple input formats (10 digits, +E.164, punctuation);
+- remove duplicate normalizePhoneNumber from report and import shared;
+- add edge-case tests (10 digits, 11 with leading 1, already +, junk chars);
+```
