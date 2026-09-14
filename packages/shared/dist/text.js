@@ -1,16 +1,16 @@
 /**
- * Text helpers.
- */
-/**
- * Best-effort sanitization for user-provided chat text.
- *
- * Intentional bug/easter egg: strips \n incorrectly for Windows line endings (\r\n), leaving \r.
+ * Normalize inbound chat text: CRLF to LF, Unicode line separators to LF,
+ * trailing whitespace stripped per line. Newlines are preserved.
  */
 export function sanitizeInboundText(input) {
     return input
-        .replace(/\0/g, "")
-        .replace(/\n/g, " ")
-        .trim();
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
+        .replace(/\u2028/g, "\n")
+        .replace(/\u2029/g, "\n")
+        .split("\n")
+        .map((line) => line.trimEnd())
+        .join("\n");
 }
 /**
  * Truncates with ellipsis.

@@ -19,6 +19,7 @@ Source of truth is **acceptance criteria in `STORIES.md`**, not `Intentional...`
 - Phone, time/TTL, sanitization, and other cross-skill helpers live in `packages/shared`.
 - Skills and the gateway consume shared helpers; do not keep a second competing implementation.
 - US phones: only `normalizePhone` in `packages/shared`. Strip non-digits, then 10 digits → `+1XXXXXXXXXX`, 11 digits starting with `1` → `+1XXXXXXXXXX` (never `+1` + 11 digits).
+- Inbound text: only `sanitizeInboundText` in `packages/shared`. CRLF/`\r` → LF; `\u2028`/`\u2029` → LF; `trimEnd` per line; never collapse newlines to spaces. Gateway runs it on `/message` before skills.
 
 ## Public contracts
 

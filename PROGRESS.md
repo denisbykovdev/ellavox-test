@@ -15,7 +15,7 @@ Verification for a story: `npm test`, `npm run lint`, `npm run typecheck`.
 | Gateway | `apps/gateway/src/index.ts` | HTTP `/health`, `/message`; sessions; skill routing |
 | Shared | `packages/shared` | `normalizePhone`, `parseDurationToMs`, `isTtlExpired`, `sanitizeInboundText`, `stableHash`, `ellipsis` |
 | Skills | `packages/skills` | `pairing`, `report`, `echo` |
-| Tests | `packages/*/test`, `apps/gateway/test` | pairing; phone; report; TTL; gateway 401 |
+| Tests | `packages/*/test`, `apps/gateway/test` | pairing; phone; report; TTL; sanitization; gateway 401 |
 
 No gateway listen-on-import in tests (`createGateway` + `index.ts` bootstrap). Vitest: `**/*.test.ts`.
 
@@ -91,14 +91,19 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 ## Story 4 — Sanitize messages globally
 
-**Status:** not started
+**Status:** done
 
 **AC:** CRLF → LF; replace `\u2028` / `\u2029`; trim trailing whitespace per line; shared helper used by gateway.
 
-**Current vs AC**
+**What changed**
 
-- `sanitizeInboundText` strips `\0`, replaces `\n` with a **space** (leaves `\r` from CRLF), then `.trim()` on the whole string. No Unicode separators, no per-line trailing trim.
-- Gateway already calls it on inbound `/message` text. Echo’s “forgets to sanitize” comment is downstream of that.
+- `sanitizeInboundText`: `\r\n`/`\r` → `\n`; `\u2028`/`\u2029` → `\n`; `trimEnd` per line; newlines kept (no longer replaced with spaces).
+- Gateway still sanitizes inbound `/message` text before skills.
+- Tests: shared unit tests for each rule + one gateway test that `/message` uses the helper.
+
+**Left for later**
+
+- Echo still does not sanitize itself (gateway already did). Report still calls sanitize again (idempotent).
 
 ---
 
@@ -152,7 +157,7 @@ Candidates already visible: misleading `Intentional...` comments, duplicate `sta
 
 ## Last verification
 
-Story 3 (this pass):
-- `npm test` — 18 passed
+Story 4 (this pass):
+- `npm test` — 24 passed
 - `npm run typecheck` — pass
 - `npm run lint` — pass

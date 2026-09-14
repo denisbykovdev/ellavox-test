@@ -1,10 +1,6 @@
 /**
- * Text helpers.
- */
-/**
- * Best-effort sanitization for user-provided chat text.
- *
- * Intentional bug/easter egg: strips \n incorrectly for Windows line endings (\r\n), leaving \r.
+ * Normalize inbound chat text: CRLF to LF, Unicode line separators to LF,
+ * trailing whitespace stripped per line. Newlines are preserved.
  */
 export declare function sanitizeInboundText(input: string): string;
 /**
