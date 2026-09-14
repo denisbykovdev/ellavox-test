@@ -1,0 +1,21 @@
+# Generated / local paths.
+# node_modules is ignored so it is not submitted.
+# Other entries stay commented so the eval tree (dist, .cursor, etc.) can still be committed.
+
+node_modules/
+# dist/
+# **/dist/
+# *.tsbuildinfo
+# coverage/
+# *.log
+# .env
+# .env.*
+# .cursor/
+# dist/
+# **/dist/
+# *.tsbuildinfo
+# coverage/
+# *.log
+# .env
+# .env.*
+# .cursor/

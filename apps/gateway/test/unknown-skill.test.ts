@@ -1,45 +1,11 @@
-import type { Server } from "node:http";
-import type { AddressInfo } from "node:net";
-import { afterEach, describe, expect, it } from "vitest";
-import { createGateway } from "../src/gateway.js";
-
-async function listen(server: Server): Promise<number> {
-  await new Promise<void>((resolve) => {
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  return (server.address() as AddressInfo).port;
-}
-
-async function postMessage(
-  port: number,
-  body: unknown
-): Promise<{ status: number; json: Record<string, unknown> }> {
-  const res = await fetch(`http://127.0.0.1:${port}/message`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  return { status: res.status, json: (await res.json()) as Record<string, unknown> };
-}
+import { describe, expect, it } from "vitest";
+import { httpJson, postMessage, useGateway } from "./helpers.js";
 
 describe("unknown skills", () => {
-  const servers: Server[] = [];
-
-  afterEach(async () => {
-    await Promise.all(
-      servers.splice(0).map(
-        (server) =>
-          new Promise<void>((resolve, reject) => {
-            server.close((err) => (err ? reject(err) : resolve()));
-          })
-      )
-    );
-  });
+  const gw = useGateway();
 
   it("returns 400 UNKNOWN_SKILL with the provided name and availableSkills", async () => {
-    const server = createGateway({ now: () => 1_000_000 });
-    servers.push(server);
-    const port = await listen(server);
+    const port = await gw.start({ now: () => 1_000_000 });
 
     const byText = await postMessage(port, {
       channel: "webchat",
@@ -66,10 +32,29 @@ describe("unknown skills", () => {
     expect(byField.json.availableSkills).toEqual(["pairing", "report", "echo", "status"]);
   });
 
+  it("does not treat pairfoo or statusxyz as prefix matches", async () => {
+    const port = await gw.start({ now: () => 1_000_000 });
+
+    const pairfoo = await postMessage(port, {
+      channel: "webchat",
+      sender: "u1",
+      text: "pairfoo 1234"
+    });
+    expect(pairfoo.status).toBe(400);
+    expect(pairfoo.json.errorCode).toBe("UNKNOWN_SKILL");
+    expect(pairfoo.json.skill).toBe("pairfoo");
+
+    const statusxyz = await postMessage(port, {
+      channel: "webchat",
+      sender: "u1",
+      text: "statusxyz"
+    });
+    expect(statusxyz.status).toBe(400);
+    expect(statusxyz.json.skill).toBe("statusxyz");
+  });
+
   it("keeps known skills and the success response shape working", async () => {
-    const server = createGateway({ now: () => 1_000_000 });
-    servers.push(server);
-    const port = await listen(server);
+    const port = await gw.start({ now: () => 1_000_000 });
 
     const echo = await postMessage(port, {
       channel: "webchat",
@@ -104,5 +89,12 @@ describe("unknown skills", () => {
       sessionId: expect.any(String),
       result: { text: expect.stringContaining("To: +15551234567") }
     });
+  });
+
+  it("returns 400 for invalid JSON instead of hanging", async () => {
+    const port = await gw.start({ now: () => 1_000_000 });
+    const res = await httpJson(port, "POST", "/message", "{not json");
+    expect(res.status).toBe(400);
+    expect(res.json).toEqual({ error: "invalid_json" });
   });
 });

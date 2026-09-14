@@ -63,6 +63,10 @@ function getSessionKey(channel: string, sender: string): string {
   return stableHash(`${channel}:${sender}`);
 }
 
+function firstToken(text: string): string {
+  return text.trim().split(/\s+/)[0] ?? "";
+}
+
 function resolveSkill(
   text: string,
   requestedName: string | undefined
@@ -73,14 +77,20 @@ function resolveSkill(
     return { ok: true, skill: found };
   }
 
-  const t = text.trim().toLowerCase();
-  if (t.startsWith("pair")) return { ok: true, skill: pairingSkill };
-  if (t.startsWith("report")) return { ok: true, skill: reportSkill };
-  if (t.startsWith("status")) return { ok: true, skill: statusSkill };
-  if (t.startsWith("echo")) return { ok: true, skill: echoSkill };
-
-  const provided = text.trim().split(/\s+/)[0] ?? "";
-  return { ok: false, provided };
+  const token = firstToken(text);
+  switch (token.toLowerCase()) {
+    case "pair":
+    case "pairing":
+      return { ok: true, skill: pairingSkill };
+    case "report":
+      return { ok: true, skill: reportSkill };
+    case "status":
+      return { ok: true, skill: statusSkill };
+    case "echo":
+      return { ok: true, skill: echoSkill };
+    default:
+      return { ok: false, provided: token };
+  }
 }
 
 function availableSkillNames(): string[] {
@@ -158,7 +168,12 @@ export function createGateway(deps: GatewayDeps = {}): http.Server {
     }
 
     if (req.method === "POST" && url.pathname === "/message") {
-      const body = await readJson(req);
+      let body: JsonObject;
+      try {
+        body = await readJson(req);
+      } catch {
+        return send(res, 400, { error: "invalid_json" });
+      }
 
       const channel = parseChannel(body.channel);
       const sender = String(body.sender ?? "anonymous");

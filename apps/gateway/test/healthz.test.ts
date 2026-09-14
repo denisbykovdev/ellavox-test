@@ -1,10 +1,8 @@
 import { readFileSync } from "node:fs";
-import type { Server } from "node:http";
-import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { createGateway } from "../src/gateway.js";
+import { httpJson, useGateway } from "./helpers.js";
 
 const gatewayVersion = (
   JSON.parse(
@@ -12,36 +10,19 @@ const gatewayVersion = (
   ) as { version: string }
 ).version;
 
-async function listen(server: Server): Promise<number> {
-  await new Promise<void>((resolve) => {
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  return (server.address() as AddressInfo).port;
-}
-
 describe("GET /healthz", () => {
-  const servers: Server[] = [];
+  const gw = useGateway();
 
-  afterEach(async () => {
+  afterEach(() => {
     delete process.env.HEALTHZ_SECRET;
-    await Promise.all(
-      servers.splice(0).map(
-        (server) =>
-          new Promise<void>((resolve, reject) => {
-            server.close((err) => (err ? reject(err) : resolve()));
-          })
-      )
-    );
   });
 
   it("returns status, uptimeSeconds, skillsLoaded, and package.json version", async () => {
     process.env.HEALTHZ_SECRET = "do-not-leak";
-    const server = createGateway({ now: () => 5_000_000, startedAt: 2_000_000 });
-    servers.push(server);
-    const port = await listen(server);
+    const port = await gw.start({ now: () => 5_000_000, startedAt: 2_000_000 });
 
-    const healthzRes = await fetch(`http://127.0.0.1:${port}/healthz`);
-    const healthz = (await healthzRes.json()) as Record<string, unknown>;
+    const healthzRes = await httpJson(port, "GET", "/healthz");
+    const healthz = healthzRes.json as Record<string, unknown>;
 
     expect(healthzRes.status).toBe(200);
     expect(Object.keys(healthz).sort()).toEqual(
@@ -56,8 +37,8 @@ describe("GET /healthz", () => {
     expect(JSON.stringify(healthz)).not.toContain("do-not-leak");
     expect(healthz).not.toHaveProperty("env");
 
-    const healthRes = await fetch(`http://127.0.0.1:${port}/health`);
-    expect(healthRes.status).toBe(200);
-    expect(await healthRes.json()).toEqual({ ok: true, sessions: 0 });
+    const health = await httpJson(port, "GET", "/health");
+    expect(health.status).toBe(200);
+    expect(health.json).toEqual({ ok: true, sessions: 0 });
   });
 });

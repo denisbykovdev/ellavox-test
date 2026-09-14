@@ -47,7 +47,7 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 **Left for later**
 
-- `pairingSkill.run` still stamps `createdAt` as `now - 60_000` (not part of this story).
+- none (pairing codes are created at `ctx.timestampMs`).
 
 ---
 
@@ -172,11 +172,19 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 - `readJson` returns `Record<string, unknown>`; `parseChannel` replaces `channel as any`.
 - `ellipsis` truncates with explicit `max - "…".length` (same length, no `max - 1` one-liner).
 
+**Follow-ups after bonus**
+
+- Pairing codes are created at request time (not `now - 60s`).
+- Invalid JSON on `/message` returns 400 `{ error: "invalid_json" }`.
+- Skill routing matches the first token (`pair`/`pairing`, `report`, `status`, `echo`), not `startsWith`.
+- `.gitignore` exists with ignore rules commented so the eval submit stays complete.
+- Gateway HTTP tests share `apps/gateway/test/helpers.ts`.
+
 ---
 
 ## Last verification
 
-Bonus (this pass):
-- `npm test` — 33 passed
+Polish (this pass):
+- `npm test` — 36 passed
 - `npm run lint` — pass
 - `npm run typecheck` — pass

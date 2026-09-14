@@ -29,6 +29,9 @@ function asJsonObject(value) {
 function getSessionKey(channel, sender) {
     return stableHash(`${channel}:${sender}`);
 }
+function firstToken(text) {
+    return text.trim().split(/\s+/)[0] ?? "";
+}
 function resolveSkill(text, requestedName) {
     if (requestedName) {
         const found = skills.find((s) => s.name.toLowerCase() === requestedName.toLowerCase());
@@ -36,17 +39,20 @@ function resolveSkill(text, requestedName) {
             return { ok: false, provided: requestedName };
         return { ok: true, skill: found };
     }
-    const t = text.trim().toLowerCase();
-    if (t.startsWith("pair"))
-        return { ok: true, skill: pairingSkill };
-    if (t.startsWith("report"))
-        return { ok: true, skill: reportSkill };
-    if (t.startsWith("status"))
-        return { ok: true, skill: statusSkill };
-    if (t.startsWith("echo"))
-        return { ok: true, skill: echoSkill };
-    const provided = text.trim().split(/\s+/)[0] ?? "";
-    return { ok: false, provided };
+    const token = firstToken(text);
+    switch (token.toLowerCase()) {
+        case "pair":
+        case "pairing":
+            return { ok: true, skill: pairingSkill };
+        case "report":
+            return { ok: true, skill: reportSkill };
+        case "status":
+            return { ok: true, skill: statusSkill };
+        case "echo":
+            return { ok: true, skill: echoSkill };
+        default:
+            return { ok: false, provided: token };
+    }
 }
 function availableSkillNames() {
     return skills.map((s) => s.name);
@@ -109,7 +115,13 @@ export function createGateway(deps = {}) {
             });
         }
         if (req.method === "POST" && url.pathname === "/message") {
-            const body = await readJson(req);
+            let body;
+            try {
+                body = await readJson(req);
+            }
+            catch {
+                return send(res, 400, { error: "invalid_json" });
+            }
             const channel = parseChannel(body.channel);
             const sender = String(body.sender ?? "anonymous");
             const textRaw = String(body.text ?? "");

@@ -10,7 +10,7 @@ export const pairingSkill = {
     description: "Simulate approving a pairing code (demo).",
     async run(ctx) {
         const code = ctx.text.trim();
-        const req = { code, createdAt: ctx.timestampMs - 60_000 };
+        const req = { code, createdAt: ctx.timestampMs };
         if (!isPairingCodeValid(req, ctx.timestampMs)) {
             return { text: `Pairing code expired: ${stableHash(code)}` };
         }

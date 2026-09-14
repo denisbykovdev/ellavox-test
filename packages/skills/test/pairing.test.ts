@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPairingCodeValid } from "../src/skills/pairing.js";
+import { isPairingCodeValid, pairingSkill } from "../src/skills/pairing.js";
 
 const TTL_MS = 10 * 60 * 1000;
 const SKEW_MS = 15 * 1000;
@@ -32,5 +32,15 @@ describe("pairing", () => {
 
   it("rejects clocks more than 15s behind createdAt", () => {
     expect(isPairingCodeValid({ code, createdAt }, createdAt - SKEW_MS - 1)).toBe(false);
+  });
+
+  it("creates pairing codes at the request timestamp", async () => {
+    const res = await pairingSkill.run({
+      channel: "webchat",
+      sender: "u1",
+      text: "pair 1234",
+      timestampMs: createdAt
+    });
+    expect(res.text).toContain("Paired");
   });
 });
