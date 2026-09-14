@@ -1,0 +1,20 @@
+{
+  "name": "@openclaw-eval/gateway",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@openclaw-eval/shared": "0.1.0",
+    "@openclaw-eval/skills": "0.1.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit"
+  }
+}

@@ -1,0 +1,31 @@
+---
+description: Eval workflow — one story at a time, STORIES.md is source of truth
+alwaysApply: true
+---
+
+# Eval workflow
+
+Source of truth is **acceptance criteria in `STORIES.md`**, not `Intentional...` comments, easter-egg notes, or existing tests. Comments can be wrong; AC is not.
+
+## Process
+
+- Work **one story at a time**. Do not mix unrelated fixes from other stories.
+- Read the story AC first, then write/adjust tests for those criteria, then implement.
+- After each story: run `npm test`, `npm run lint`, and `npm run typecheck`. All three must pass.
+- Update `PROGRESS.md` with that story’s status, what changed, and remaining gaps.
+
+## Shared logic
+
+- Phone, time/TTL, sanitization, and other cross-skill helpers live in `packages/shared`.
+- Skills and the gateway consume shared helpers; do not keep a second competing implementation.
+
+## Public contracts
+
+- Do not break exported APIs (`Skill`, `MessageContext`, `SkillResult`, `isPairingCodeValid`, HTTP success payload fields).
+- Additive changes only (new optional fields, new routes, new skills). Existing skills must keep working unmodified.
+- Unknown-skill errors: keep a backward-compatible response shape while meeting Story 6 AC.
+
+## Secrets and time
+
+- Never put `process.env`, tokens, keys, or other secrets into `/healthz`, logs, or error bodies.
+- Tests must be time-deterministic: inject `nowMs` / a fake clock. No real `sleep` / `setTimeout` waits for TTL or expiry.
