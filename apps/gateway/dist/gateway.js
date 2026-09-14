@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, URL } from "node:url";
 import { isTtlExpired, sanitizeInboundText, stableHash } from "@openclaw-eval/shared";
-import { echoSkill, pairingSkill, reportSkill } from "@openclaw-eval/skills";
+import { echoSkill, pairingSkill, reportSkill, statusSkill } from "@openclaw-eval/skills";
 import { readSessionTtlSeconds } from "./session.js";
-const skills = [pairingSkill, reportSkill, echoSkill];
+const skills = [pairingSkill, reportSkill, echoSkill, statusSkill];
 const version = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8")).version;
 function getSessionKey(channel, sender) {
     return stableHash(`${channel}:${sender}`);
@@ -22,6 +22,8 @@ function resolveSkill(text, requestedName) {
         return { ok: true, skill: pairingSkill };
     if (t.startsWith("report"))
         return { ok: true, skill: reportSkill };
+    if (t.startsWith("status"))
+        return { ok: true, skill: statusSkill };
     if (t.startsWith("echo"))
         return { ok: true, skill: echoSkill };
     const provided = text.trim().split(/\s+/)[0] ?? "";
@@ -117,7 +119,11 @@ export function createGateway(deps = {}) {
                 channel: channel,
                 sender,
                 text,
-                timestampMs: now
+                timestampMs: now,
+                session: {
+                    createdAt: session.createdAt,
+                    messages: session.messages
+                }
             };
             const result = await skill.run(ctx);
             return send(res, 200, {

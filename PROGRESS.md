@@ -14,7 +14,7 @@ Verification for a story: `npm test`, `npm run lint`, `npm run typecheck`.
 |------|------|------|
 | Gateway | `apps/gateway/src` | HTTP `/health`, `/healthz`, `/message`; sessions; skill routing |
 | Shared | `packages/shared` | `normalizePhone`, `parseDurationToMs`, `isTtlExpired`, `sanitizeInboundText`, `stableHash`, `ellipsis` |
-| Skills | `packages/skills` | `pairing`, `report`, `echo` |
+| Skills | `packages/skills` | `pairing`, `report`, `echo`, `status` |
 | Tests | `packages/*/test`, `apps/gateway/test` | pairing; phone; report; TTL; sanitization; gateway 401 |
 
 No gateway listen-on-import in tests (`createGateway` + `index.ts` bootstrap). Vitest: `**/*.test.ts`.
@@ -138,20 +138,26 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 **Left for later**
 
-- `status` prefix is Story 7.
+- `status` prefix is Story 7 (done).
 
 ---
 
 ## Story 7 — Session status skill
 
-**Status:** not started
+**Status:** done
 
 **AC:** messages starting with `status` (case-insensitive) → `statusSkill`; response includes message count, session age in seconds, last 5 messages truncated to 80 chars; session data via `MessageContext` without breaking existing skills; ≥2 tests (n<5 and n>5 with truncation).
 
-**Current vs AC**
+**What changed**
 
-- No `status` skill. `MessageContext` has only `channel`, `sender`, `text`, `timestampMs` — no session payload.
-- Existing skills must keep working with the current `run(ctx)` shape (additive context only).
+- Added `statusSkill` (`packages/skills/src/skills/status.ts`), exported from the skills package, routed from `status*` in the gateway.
+- `MessageContext.session?` is additive (`createdAt`, `messages`). Echo/pairing/report files unchanged.
+- Summary text: `messages`, `ageSeconds`, last 5 lines truncated to 80 chars.
+- Tests: n<5; n>5 with truncation; existing skills still run without session; gateway `STATUS` routing.
+
+**Left for later**
+
+- Bonus: remaining `Intentional...` comments, duplicate `stableHash`, `any` leaks.
 
 ---
 
@@ -165,7 +171,7 @@ Candidates already visible: misleading `Intentional...` comments, duplicate `sta
 
 ## Last verification
 
-Story 6 (this pass):
-- `npm test` — 27 passed
-- `npm run typecheck` — pass
+Story 7 (this pass):
+- `npm test` — 31 passed
 - `npm run lint` — pass
+- `npm run typecheck` — pass

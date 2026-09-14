@@ -7,12 +7,13 @@ import {
   echoSkill,
   pairingSkill,
   reportSkill,
+  statusSkill,
   type MessageContext,
   type Skill
 } from "@openclaw-eval/skills";
 import { readSessionTtlSeconds } from "./session.js";
 
-const skills: Skill[] = [pairingSkill, reportSkill, echoSkill];
+const skills: Skill[] = [pairingSkill, reportSkill, echoSkill, statusSkill];
 
 const version = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8")
@@ -48,6 +49,7 @@ function resolveSkill(
   const t = text.trim().toLowerCase();
   if (t.startsWith("pair")) return { ok: true, skill: pairingSkill };
   if (t.startsWith("report")) return { ok: true, skill: reportSkill };
+  if (t.startsWith("status")) return { ok: true, skill: statusSkill };
   if (t.startsWith("echo")) return { ok: true, skill: echoSkill };
 
   const provided = text.trim().split(/\s+/)[0] ?? "";
@@ -165,7 +167,11 @@ export function createGateway(deps: GatewayDeps = {}): http.Server {
         channel: channel as any,
         sender,
         text,
-        timestampMs: now
+        timestampMs: now,
+        session: {
+          createdAt: session.createdAt,
+          messages: session.messages
+        }
       };
 
       const result = await skill.run(ctx);

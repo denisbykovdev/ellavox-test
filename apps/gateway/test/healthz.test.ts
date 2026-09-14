@@ -50,7 +50,7 @@ describe("GET /healthz", () => {
     expect(healthz).toEqual({
       status: "ok",
       uptimeSeconds: 3000,
-      skillsLoaded: 3,
+      skillsLoaded: 4,
       version: gatewayVersion
     });
     expect(JSON.stringify(healthz)).not.toContain("do-not-leak");

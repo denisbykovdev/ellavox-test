@@ -51,7 +51,7 @@ describe("unknown skills", () => {
       error: "unknown_skill",
       errorCode: "UNKNOWN_SKILL",
       skill: "nope",
-      availableSkills: ["pairing", "report", "echo"]
+      availableSkills: ["pairing", "report", "echo", "status"]
     });
 
     const byField = await postMessage(port, {
@@ -63,7 +63,7 @@ describe("unknown skills", () => {
     expect(byField.status).toBe(400);
     expect(byField.json.errorCode).toBe("UNKNOWN_SKILL");
     expect(byField.json.skill).toBe("missing");
-    expect(byField.json.availableSkills).toEqual(["pairing", "report", "echo"]);
+    expect(byField.json.availableSkills).toEqual(["pairing", "report", "echo", "status"]);
   });
 
   it("keeps known skills and the success response shape working", async () => {
