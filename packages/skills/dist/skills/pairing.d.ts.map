@@ -1,0 +1,1 @@
+{"version":3,"file":"pairing.d.ts","sourceRoot":"","sources":["../../src/skills/pairing.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,aAAa,CAAC;AAEzC,MAAM,MAAM,cAAc,GAAG;IAC3B,IAAI,EAAE,MAAM,CAAC;IAEb,SAAS,EAAE,MAAM,CAAC;CACnB,CAAC;AAaF,wBAAgB,kBAAkB,CAAC,GAAG,EAAE,cAAc,EAAE,KAAK,EAAE,MAAM,GAAG,OAAO,CAI9E;AAED,eAAO,MAAM,YAAY,EAAE,KAc1B,CAAC"}

@@ -21,6 +21,16 @@ No gateway tests. No shared-package tests. Vitest: `**/*.test.ts`.
 
 Public HTTP success body today: `{ sessionId, skill, result }` where `result` is `{ text, tags? }`.
 
+### Tooling (blocker, not a story)
+
+**Status:** done
+
+`@openclaw-eval/shared` and `@openclaw-eval/skills` exported `./dist/index.js`, but `dist/` is never produced until a successful build. Vitest then failed with `Failed to resolve entry for package "@openclaw-eval/shared"` (report suite never loaded). Skills `tsconfig` also included `test/**/*.ts` while `rootDir` was `src`, so `tsc -b` failed.
+
+Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` and `tsx` resolve source without a prior build. Skills tsconfig compiles `src` only.
+
+`npm run typecheck` passes. `npm test` now **loads** both suites; remaining failures are story logic (see below).
+
 ---
 
 ## Story 1 — Pairing codes occasionally expire instantly
@@ -51,6 +61,7 @@ Public HTTP success body today: `{ sessionId, skill, result }` where `result` is
 - Shared `normalizePhone`: 11-digit numbers starting with `1` become `+1` + all 11 digits (`15551234567` → `+115551234567`).
 - Report skill uses a **local** `normalizePhoneNumber`, not shared. Local 11-digit path is `+${digits}` (different from shared).
 - Only one test: 10-digit `(555) 123-4567` via `reportSkill`. No 11-digit / already-E.164 / punctuation cases.
+- After the package resolve fix, that test **runs and fails**: local parser takes `\S+` so `(555)` is the “phone” and `123-4567 hello` is the body → `To: +555`. Shared `normalizePhone` is not used.
 
 ---
 
@@ -132,4 +143,6 @@ Candidates already visible: misleading `Intentional...` comments, duplicate `sta
 
 ## Last verification
 
-Not run yet (no code changes this pass).
+- `npm run typecheck` — pass (after tooling fix)
+- `npm test` — 2 failed / 2 total (pairing Story 1; report Story 2). Library resolve is unblocked.
+- `npm run lint` — not run this pass
