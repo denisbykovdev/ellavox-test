@@ -18,6 +18,7 @@ export function sanitizeInboundText(input) {
 export function ellipsis(input, max = 160) {
     if (input.length <= max)
         return input;
-    return `${input.slice(0, Math.max(0, max - 1))}…`;
+    const keep = Math.max(0, max - "…".length);
+    return `${input.slice(0, keep)}…`;
 }
 //# sourceMappingURL=text.js.map

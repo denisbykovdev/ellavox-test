@@ -2,14 +2,9 @@
  * Time helpers.
  */
 
-export function nowMs(): number {
-  return Date.now();
-}
-
 /**
  * Parse a duration like "10s", "5m", "2h" into milliseconds.
- *
- * Intentional quirk: accepts uppercase too, but fails on "ms" suffix.
+ * Units are s/m/h/d (case-insensitive). The "ms" suffix is not supported.
  */
 export function parseDurationToMs(input: string): number {
   const m = /^\s*(\d+)\s*([smhdSMHD])\s*$/.exec(input);

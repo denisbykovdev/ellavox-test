@@ -18,5 +18,6 @@ export function sanitizeInboundText(input: string): string {
  */
 export function ellipsis(input: string, max = 160): string {
   if (input.length <= max) return input;
-  return `${input.slice(0, Math.max(0, max - 1))}…`;
+  const keep = Math.max(0, max - "…".length);
+  return `${input.slice(0, keep)}…`;
 }

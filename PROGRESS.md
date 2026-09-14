@@ -48,7 +48,6 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 **Left for later**
 
 - `pairingSkill.run` still stamps `createdAt` as `now - 60_000` (not part of this story).
-- Local `stableHash` duplicate (bonus).
 
 ---
 
@@ -157,21 +156,27 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 **Left for later**
 
-- Bonus: remaining `Intentional...` comments, duplicate `stableHash`, `any` leaks.
+- none
 
 ---
 
 ## Optional bonus
 
-**Status:** not started (after stories 1–7)
+**Status:** done
 
-Candidates already visible: misleading `Intentional...` comments, duplicate `stableHash`, `any` on `readJson` and `channel as any`, `ellipsis` off-by-one (`max - 1`).
+**What changed**
+
+- Pairing uses shared `stableHash`; local duplicate removed.
+- Removed leftover `Intentional...` comments (echo, report, pairing, ids, time).
+- Removed unused `nowMs` and stale compiled files under `packages/skills/test/`.
+- `readJson` returns `Record<string, unknown>`; `parseChannel` replaces `channel as any`.
+- `ellipsis` truncates with explicit `max - "…".length` (same length, no `max - 1` one-liner).
 
 ---
 
 ## Last verification
 
-Story 7 (this pass):
-- `npm test` — 31 passed
+Bonus (this pass):
+- `npm test` — 33 passed
 - `npm run lint` — pass
 - `npm run typecheck` — pass

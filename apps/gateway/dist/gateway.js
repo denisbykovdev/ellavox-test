@@ -6,7 +6,26 @@ import { isTtlExpired, sanitizeInboundText, stableHash } from "@openclaw-eval/sh
 import { echoSkill, pairingSkill, reportSkill, statusSkill } from "@openclaw-eval/skills";
 import { readSessionTtlSeconds } from "./session.js";
 const skills = [pairingSkill, reportSkill, echoSkill, statusSkill];
-const version = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8")).version;
+const CHANNELS = ["telegram", "whatsapp", "slack", "webchat"];
+const version = readGatewayVersion();
+function readGatewayVersion() {
+    const parsed = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8"));
+    if (typeof parsed === "object" &&
+        parsed !== null &&
+        "version" in parsed &&
+        typeof parsed.version === "string") {
+        return parsed.version;
+    }
+    throw new Error("gateway package.json is missing a string version");
+}
+function parseChannel(value) {
+    return CHANNELS.find((c) => c === value) ?? "webchat";
+}
+function asJsonObject(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value)
+        ? value
+        : {};
+}
 function getSessionKey(channel, sender) {
     return stableHash(`${channel}:${sender}`);
 }
@@ -38,7 +57,7 @@ function readJson(req) {
         req.on("data", (c) => (buf += c));
         req.on("end", () => {
             try {
-                resolve(buf ? JSON.parse(buf) : {});
+                resolve(buf ? asJsonObject(JSON.parse(buf)) : {});
             }
             catch (e) {
                 reject(e);
@@ -91,7 +110,7 @@ export function createGateway(deps = {}) {
         }
         if (req.method === "POST" && url.pathname === "/message") {
             const body = await readJson(req);
-            const channel = String(body.channel ?? "webchat");
+            const channel = parseChannel(body.channel);
             const sender = String(body.sender ?? "anonymous");
             const textRaw = String(body.text ?? "");
             const text = sanitizeInboundText(textRaw);
@@ -116,7 +135,7 @@ export function createGateway(deps = {}) {
             session.messages.push({ from: sender, text, at: now });
             const skill = picked.skill;
             const ctx = {
-                channel: channel,
+                channel,
                 sender,
                 text,
                 timestampMs: now,

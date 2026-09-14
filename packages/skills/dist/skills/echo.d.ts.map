@@ -1,1 +1,1 @@
-{"version":3,"file":"echo.d.ts","sourceRoot":"","sources":["../../src/skills/echo.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,aAAa,CAAC;AAGzC,eAAO,MAAM,SAAS,EAAE,KAUvB,CAAC"}
+{"version":3,"file":"echo.d.ts","sourceRoot":"","sources":["../../src/skills/echo.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,aAAa,CAAC;AAGzC,eAAO,MAAM,SAAS,EAAE,KASvB,CAAC"}

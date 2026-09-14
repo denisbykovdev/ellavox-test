@@ -17,7 +17,6 @@ export const reportSkill = {
         }
         const phone = normalizePhone(m[1]);
         const body = m[2];
-        // Intentional easter egg bug: body is not trimmed and can be empty spaces.
         return {
             text: `To: ${phone}\n---\n${body}`,
             tags: ["ops", ctx.channel]

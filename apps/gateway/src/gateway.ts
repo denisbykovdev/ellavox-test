@@ -8,16 +8,43 @@ import {
   pairingSkill,
   reportSkill,
   statusSkill,
+  type Channel,
   type MessageContext,
   type Skill
 } from "@openclaw-eval/skills";
 import { readSessionTtlSeconds } from "./session.js";
 
 const skills: Skill[] = [pairingSkill, reportSkill, echoSkill, statusSkill];
+const CHANNELS: readonly Channel[] = ["telegram", "whatsapp", "slack", "webchat"];
 
-const version = JSON.parse(
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8")
-).version as string;
+const version = readGatewayVersion();
+
+type JsonObject = Record<string, unknown>;
+
+function readGatewayVersion(): string {
+  const parsed: unknown = JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8")
+  );
+  if (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    "version" in parsed &&
+    typeof parsed.version === "string"
+  ) {
+    return parsed.version;
+  }
+  throw new Error("gateway package.json is missing a string version");
+}
+
+function parseChannel(value: unknown): Channel {
+  return CHANNELS.find((c) => c === value) ?? "webchat";
+}
+
+function asJsonObject(value: unknown): JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as JsonObject)
+    : {};
+}
 
 type Session = {
   id: string;
@@ -60,13 +87,13 @@ function availableSkillNames(): string[] {
   return skills.map((s) => s.name);
 }
 
-function readJson(req: http.IncomingMessage): Promise<any> {
+function readJson(req: http.IncomingMessage): Promise<JsonObject> {
   return new Promise((resolve, reject) => {
     let buf = "";
     req.on("data", (c) => (buf += c));
     req.on("end", () => {
       try {
-        resolve(buf ? JSON.parse(buf) : {});
+        resolve(buf ? asJsonObject(JSON.parse(buf) as unknown) : {});
       } catch (e) {
         reject(e);
       }
@@ -133,7 +160,7 @@ export function createGateway(deps: GatewayDeps = {}): http.Server {
     if (req.method === "POST" && url.pathname === "/message") {
       const body = await readJson(req);
 
-      const channel = String(body.channel ?? "webchat");
+      const channel = parseChannel(body.channel);
       const sender = String(body.sender ?? "anonymous");
       const textRaw = String(body.text ?? "");
       const text = sanitizeInboundText(textRaw);
@@ -164,7 +191,7 @@ export function createGateway(deps: GatewayDeps = {}): http.Server {
       const skill = picked.skill;
 
       const ctx: MessageContext = {
-        channel: channel as any,
+        channel,
         sender,
         text,
         timestampMs: now,

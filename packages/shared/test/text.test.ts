@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeInboundText } from "../src/text.js";
+import { ellipsis, sanitizeInboundText } from "../src/text.js";
 
 describe("sanitizeInboundText", () => {
   it("converts CRLF to LF", () => {
@@ -20,5 +20,16 @@ describe("sanitizeInboundText", () => {
 
   it("applies CRLF, Unicode separators, and per-line trim together", () => {
     expect(sanitizeInboundText("a  \r\nb\u2028c \t")).toBe("a\nb\nc");
+  });
+});
+
+describe("ellipsis", () => {
+  it("returns the input when it already fits", () => {
+    expect(ellipsis("hi", 10)).toBe("hi");
+  });
+
+  it("truncates to max length including the ellipsis character", () => {
+    expect(ellipsis("abcdefghij", 8)).toBe("abcdefg…");
+    expect(ellipsis("abcdefghij", 8).length).toBe(8);
   });
 });
