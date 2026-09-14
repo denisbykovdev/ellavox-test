@@ -30,6 +30,7 @@ Source of truth is **acceptance criteria in `STORIES.md`**, not `Intentional...`
 ## Secrets and time
 
 - Never put `process.env`, tokens, keys, or other secrets into `/healthz`, logs, or error bodies.
+- `/healthz` returns only `{ status, uptimeSeconds, skillsLoaded, version }`. Read `version` from `apps/gateway/package.json` (not a hardcoded string). Keep `GET /health` as `{ ok, sessions }`.
 - Tests must be time-deterministic: inject `nowMs` / a fake clock. No real `sleep` / `setTimeout` waits for TTL or expiry.
 - Compare durations in **milliseconds only** (never mix with seconds). Pairing: 10 min TTL, ±15s skew, **inclusive** on both ends (`ageMs >= -15s && ageMs <= 10min + 15s`).
 - Session TTL: `SESSION_TTL_SECONDS` default 3600. Expired when `nowMs - lastSeenAt >= ttlSeconds * 1000` → HTTP 401. Inject `now` into `createGateway`; do not import `index.ts` in tests (it listens).

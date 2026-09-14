@@ -12,7 +12,7 @@ Verification for a story: `npm test`, `npm run lint`, `npm run typecheck`.
 
 | Area | Path | Role |
 |------|------|------|
-| Gateway | `apps/gateway/src/index.ts` | HTTP `/health`, `/message`; sessions; skill routing |
+| Gateway | `apps/gateway/src` | HTTP `/health`, `/healthz`, `/message`; sessions; skill routing |
 | Shared | `packages/shared` | `normalizePhone`, `parseDurationToMs`, `isTtlExpired`, `sanitizeInboundText`, `stableHash`, `ellipsis` |
 | Skills | `packages/skills` | `pairing`, `report`, `echo` |
 | Tests | `packages/*/test`, `apps/gateway/test` | pairing; phone; report; TTL; sanitization; gateway 401 |
@@ -109,15 +109,19 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 ## Story 5 — Improve /healthz endpoint safely
 
-**Status:** not started
+**Status:** done
 
 **AC:** return `status`, `uptimeSeconds`, `skillsLoaded`, `version`; must not expose env secrets; response-shape tests.
 
-**Current vs AC**
+**What changed**
 
-- Route is `GET /health`, not `/healthz`. Body is `{ ok: true, sessions }` — no required fields.
-- Secrets are not dumped today; keep it that way (`process.env` must not appear in the body).
-- No health tests.
+- `GET /healthz` → `{ status: "ok", uptimeSeconds, skillsLoaded, version }`. Version is read from `apps/gateway/package.json`. Uptime is seconds since gateway start (`startedAt` / `now`), not `process.env`.
+- `GET /health` unchanged: `{ ok: true, sessions }`.
+- Test asserts exact keys, version from package.json, `uptimeSeconds` from injected clock, and that an env secret is not in the body.
+
+**Left for later**
+
+- Skill catalog is counted for `skillsLoaded`; routing still falls through to echo (Story 6).
 
 ---
 
@@ -157,7 +161,7 @@ Candidates already visible: misleading `Intentional...` comments, duplicate `sta
 
 ## Last verification
 
-Story 4 (this pass):
-- `npm test` — 24 passed
+Story 5 (this pass):
+- `npm test` — 25 passed
 - `npm run typecheck` — pass
 - `npm run lint` — pass

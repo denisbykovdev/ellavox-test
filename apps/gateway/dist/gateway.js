@@ -1,8 +1,12 @@
 import http from "node:http";
-import { URL } from "node:url";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath, URL } from "node:url";
 import { isTtlExpired, sanitizeInboundText, stableHash } from "@openclaw-eval/shared";
 import { echoSkill, pairingSkill, reportSkill } from "@openclaw-eval/skills";
 import { readSessionTtlSeconds } from "./session.js";
+const skills = [pairingSkill, reportSkill, echoSkill];
+const version = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8")).version;
 function getSessionKey(channel, sender) {
     return stableHash(`${channel}:${sender}`);
 }
@@ -35,6 +39,7 @@ function send(res, status, body) {
 export function createGateway(deps = {}) {
     const nowFn = deps.now ?? Date.now;
     const ttlSeconds = deps.ttlSeconds ?? readSessionTtlSeconds();
+    const startedAt = deps.startedAt ?? nowFn();
     const sessions = new Map();
     function resolveSession(channel, sender, now) {
         const key = getSessionKey(channel, sender);
@@ -60,6 +65,15 @@ export function createGateway(deps = {}) {
         const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
         if (req.method === "GET" && url.pathname === "/health") {
             return send(res, 200, { ok: true, sessions: sessions.size });
+        }
+        if (req.method === "GET" && url.pathname === "/healthz") {
+            const uptimeSeconds = Math.max(0, Math.floor((nowFn() - startedAt) / 1000));
+            return send(res, 200, {
+                status: "ok",
+                uptimeSeconds,
+                skillsLoaded: skills.length,
+                version
+            });
         }
         if (req.method === "POST" && url.pathname === "/message") {
             const body = await readJson(req);
