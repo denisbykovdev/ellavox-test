@@ -35,18 +35,20 @@ Fix: package `exports`/`main`/`types` now point at `src/index.ts` so `npm test` 
 
 ## Story 1 — Pairing codes occasionally expire instantly
 
-**Status:** not started
+**Status:** done
 
 **AC:** new code valid 10 minutes; ±15s clock tolerance; deterministic tests; do not change public API contracts.
 
-**Current vs AC**
+**What changed**
 
-- `isPairingCodeValid` converts age to **seconds**, then compares to `5 * 60 * 1000` (milliseconds). Units are mixed; TTL is 5 minutes in comments, not 10 minutes in AC.
-- Existing test (`packages/skills/test/pairing.test.ts`) expects expiry after 5 minutes and no ±15s window — that test itself does not match AC.
-- `pairingSkill.run` stamps `createdAt` as `ctx.timestampMs - 60_000` (already 1 minute old).
-- Duplicate local `stableHash` (also in `packages/shared`).
+- `isPairingCodeValid(req, nowMs)` unchanged signature. Age is computed in ms: valid when `-15s <= age <= 10min + 15s` (inclusive).
+- Removed the 5-minute comment and the seconds/milliseconds mix.
+- Tests use a fixed `createdAt` (no real clock): new code; 1ms before 10 min; +15s / -15s skew bounds; 1ms past tolerated expiry; 1ms before -15s.
 
-**Public contract to keep:** `isPairingCodeValid(req, nowMs)`, `PairingRequest`, skill name `pairing`.
+**Left for later**
+
+- `pairingSkill.run` still stamps `createdAt` as `now - 60_000` (not part of this story).
+- Local `stableHash` duplicate (bonus).
 
 ---
 
@@ -143,6 +145,8 @@ Candidates already visible: misleading `Intentional...` comments, duplicate `sta
 
 ## Last verification
 
-- `npm run typecheck` — pass (after tooling fix)
-- `npm test` — 2 failed / 2 total (pairing Story 1; report Story 2). Library resolve is unblocked.
-- `npm run lint` — not run this pass
+Story 1 (this pass):
+- pairing tests: 6 passed (fixed `createdAt`, boundaries, ±15s)
+- `npm test` — pairing green; report still fails (Story 2, untouched)
+- `npm run typecheck` — pass
+- `npm run lint` — fail on pre-existing unused `skills` in `apps/gateway/src/index.ts` (not this story)

@@ -16,11 +16,12 @@ function stableHash(input: string): string {
   return (h >>> 0).toString(16);
 }
 
-// Intentional bug: expires check mixes seconds and milliseconds.
+const PAIRING_TTL_MS = 10 * 60 * 1000;
+const CLOCK_SKEW_MS = 15 * 1000;
+
 export function isPairingCodeValid(req: PairingRequest, nowMs: number): boolean {
-  const ageSeconds = (nowMs - req.createdAt) / 1000;
-  // supposed to expire after 5 minutes
-  return ageSeconds < 5 * 60 * 1000;
+  const ageMs = nowMs - req.createdAt;
+  return ageMs >= -CLOCK_SKEW_MS && ageMs <= PAIRING_TTL_MS + CLOCK_SKEW_MS;
 }
 
 export const pairingSkill: Skill = {

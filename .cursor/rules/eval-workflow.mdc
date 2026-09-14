@@ -29,3 +29,5 @@ Source of truth is **acceptance criteria in `STORIES.md`**, not `Intentional...`
 
 - Never put `process.env`, tokens, keys, or other secrets into `/healthz`, logs, or error bodies.
 - Tests must be time-deterministic: inject `nowMs` / a fake clock. No real `sleep` / `setTimeout` waits for TTL or expiry.
+- Compare durations in **milliseconds only** (never mix with seconds). Pairing: 10 min TTL, ±15s skew, **inclusive** on both ends (`ageMs >= -15s && ageMs <= 10min + 15s`).
+- If an existing test contradicts `STORIES.md`, rewrite the test to the AC. Do not implement the old expectation.
